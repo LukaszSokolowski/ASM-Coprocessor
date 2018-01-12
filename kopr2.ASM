@@ -20,18 +20,18 @@ ORG 100H
                 FWAIT
 
                 MOV CX, 0
-                XOR AX, AX
                 XOR BX, BX
                 oblicz:
-                        XOR AH, AH                  ;Wyczysc gore rejestru AX
-                        CMP CX, 5                    ;Porownaj czy koniec petli                                 !!!!!!!!!!!!!!!!!!!!!! 0.4846 warunkiem konca
+
+                        XOR AX, AX                   ;Wyczysc gore rejestru AX
+                        CMP CX, 4                    ;Porownaj czy koniec petli                                 !!!!!!!!!!!!!!!!!!!!!! 0.4846 warunkiem konca
                         JE koniec                       ;Jesli tak to zakoncz program
 
-                        MOV [krok], CX              ;Przenies do zmiennej krok aktualna ilosc licznika petli
-                        MOV AX, CX                  ;Kopiuj do rejestru AX wartosc licznika petli
+                        MOV [krok], CX                ;Przenies do zmiennej krok aktualna ilosc licznika petli
+                        MOV AX, CX                    ;Kopiuj do rejestru AX wartosc licznika petli
                         INC CX                          ;Zwieksz licznik petli
-                        MOV BL, 2                   ;Przenies do BL wartosc 2
 
+                        MOV BL, 2                    ;Przenies do BL wartosc 2
                         DIV BL                         ;AL = (AX div BL), AH = (AX mod BL)
 
                         CMP AH, 0                   ;Czy parzysta
@@ -39,6 +39,7 @@ ORG 100H
 
 
                         ;JEDYNKA UJEMNA  (licznik)
+
                         XOR AX, AX
                         MOV AL, [licznik]
                         CMP AL, -1
@@ -63,6 +64,7 @@ ORG 100H
                         NEG AL
                     et2:
                         MOV [licznik], AL
+
                         MOV AH, 9
                         MOV DX, p1
                         INT 21H
@@ -75,27 +77,17 @@ ORG 100H
                         MOV BX, 2                              ; <---- Z tego policzyc silnie 
                         MUL BX
                         ADD AX, 1
-                        MOV [ilesilnia], AX                    ; tu zmienna silnia = 1 ,3 ,5, 7  ale po wywolaniu procedury bedzie to obliczona wartosc 1 2 6 24 120 720 itd
+                        MOV [ilesilna], AX                    ; tu zmienna silnia = 1 ,3 ,5, 7  ale po wywolaniu procedury bedzie to obliczona wartosc 1 2 6 24 120 720 itd
 
-
-
-
-
-                        XOR AX, AX
-                        XOR DX, DX
-
+                       XOR AX, AX
                         MOV AH, 2
-                        MOV DL, [ilesilnia]
-                        ADD DL, 48
-                        INT 21H
-
-                        XOR AX, AX
                         XOR DX, DX
+                        MOV DX, [ilesilna]
+                        XOR DH, DH
+                        ADD DL, 48
+                       INT 21H
 
-
-
-
-
+                       ;Wartosc ilesilnia jest liczona poprawnie tak wiec zjebalem cos przy liczeniu silni dla tej liczby
 
                        ; liczymy silnie 
 
@@ -111,15 +103,19 @@ ORG 100H
                        MOV AX, BX                      ;Kopiuj wartosc silni do mianownika      
                        MOV [mianow], AX          ;Zapisz wartosc mianownika
 
+
+                       XOR AX, AX
+                           MOV AH, 2
+                         XOR DX, DX
+                          MOV DX, [mianow]
+                        XOR DH, DH
+                       ;ADD DL, 48
+
+                       INT 21H
+
                        XOR AX, AX
                        XOR BX, BX
-
-
-
-
-
-
-
+                       XOR DX, DX
 
 
 
@@ -140,54 +136,51 @@ info  DB "Witaj w programie wykonujacym dzialania na koprocesorze!$"
 info1 DB "Koniec programu.$"
 ent1  DB  10,13,36
 
-p1   DB  "Parzyste. $"
-np1 DB   "NIeparz. $"
+p1   DB  "Parzysta. $"
+np1 DB   "Nieparzysta. $"
 
 arg1   DQ    29.0
 arg2   DQ   180.0
 radx   DQ    0.0
 check DQ    0.507
 
-condit   DQ    0.4846
-licznik   DB   1
-mianow DW  1
-suma    DQ  0.0
-krok     DW  0
-parz1    DB  2
-ilesilnia    DW  1
-temp1   DW  0
-newsilna DW 1
-adr_init  DW  0
+sinx    DQ    0.0
+
+condit          DQ    0.4846
+licznik          DB   1
+mianow       DW  1
+suma          DQ  0.0
+krok           DW  0
+ilesilna        DW  1
+temp1         DW  1
+newsilna       DW 1
+adr_init        DW  0
 
 
 ;-------------------------------Silnia--------------------------------
 
 silnia:
-         POP AX                  ;Zrzuc adres powrotu
-         MOV [adr_init], AX      ;Przenies adres do AX
 
+         XOR CX, CX
          MOV CX, 1
          XOR BX, BX
+         XOR AX, AX
 
+         MOV AX, [newsilna]
+         XOR AX, AX
+         MOV AX, 1
+         MOV [newsilna], AX
 
          sloop:
-                XOR AX, AX
-                CMP CX, [ilesilnia]
-                JE lpEnd
-                INC CX
-
                 MOV AX, [newsilna]
                 MOV BX, CX
                 MUL BX
-                MOV [newsilna], AX
-
                 XOR DX, DX
-                XOR BX, BX
+                MOV [newsilna], AX
+                CMP CX, [ilesilna]
+                JE lpEnd
+                INC CX
 
-                MOV AH, 2
-                MOV DL, 'X'
-                INT 21H
-           
          JMP sloop
 
          lpEnd:
@@ -195,8 +188,7 @@ silnia:
          XOR   CX, CX
          XOR   AX, AX
          XOR   BX, BX
-         MOV  AX, [adr_init]      ;Do AX wartosc adresu powrotu
-         PUSH AX                 ;Wrzuc adres powrotu na stos
+
 RET
 
 ;--------------------------------------------------------------------
