@@ -24,7 +24,7 @@ ORG 100H
                 XOR BX, BX
                 oblicz:
                         XOR AH, AH                  ;Wyczysc gore rejestru AX
-                        CMP CX, 5                    ;Porownaj czy koniec petli
+                        CMP CX, 5                    ;Porownaj czy koniec petli                                 !!!!!!!!!!!!!!!!!!!!!! 0.4846 warunkiem konca
                         JE koniec                       ;Jesli tak to zakoncz program
 
                         MOV [krok], CX              ;Przenies do zmiennej krok aktualna ilosc licznika petli
@@ -32,7 +32,7 @@ ORG 100H
                         INC CX                          ;Zwieksz licznik petli
                         MOV BL, 2                   ;Przenies do BL wartosc 2
 
-                        DIV BL                         ;div bl       ; AL = (AX div BL), AH = (AX mod BL)
+                        DIV BL                         ;AL = (AX div BL), AH = (AX mod BL)
 
                         CMP AH, 0                   ;Czy parzysta
                         JE  parz                       ;Jesli tak wyswietl informacje ze parzysta jesli nie to wyswietl ze nieparzysta
@@ -51,7 +51,7 @@ ORG 100H
                         MOV DX, np1
                         INT 21H
 
-                        JMP oblicz
+                        JMP mnwnk
 
                    parz:
                          ;JEDYNKA DODATNIA  (licznik)
@@ -67,7 +67,7 @@ ORG 100H
                         MOV DX, p1
                         INT 21H
 
-
+             mnwnk:
                         ;MAMY LICZNIK teraz mianownik
 
                         XOR AX, AX
@@ -75,10 +75,48 @@ ORG 100H
                         MOV BX, 2                              ; <---- Z tego policzyc silnie 
                         MUL BX
                         ADD AX, 1
-                        MOV [silnia], AX
+                        MOV [ilesilnia], AX                    ; tu zmienna silnia = 1 ,3 ,5, 7  ale po wywolaniu procedury bedzie to obliczona wartosc 1 2 6 24 120 720 itd
+
+
+
+
+
+                        XOR AX, AX
+                        XOR DX, DX
+
+                        MOV AH, 2
+                        MOV DL, [ilesilnia]
+                        ADD DL, 48
+                        INT 21H
+
+                        XOR AX, AX
+                        XOR DX, DX
+
+
+
+
 
 
                        ; liczymy silnie 
+
+                       MOV [temp1], CX              ;zapamietaj wartosc kroku
+                       CALL silnia                          ;Wywolaj procedure obliczenia silni
+                       MOV  CX, [temp1]              ;Wczytaj wartosc kroku
+
+                       XOR AX, AX                       ;Wyzeruj AX
+                       XOR BX, BX                       ;Wyzeruj BX
+
+                       MOV BX, [newsilna]                 ;Obliczona wartosc silni
+                       MOV AX, [mianow]           ;Wartosc silni jest po prostu mianownikiem
+                       MOV AX, BX                      ;Kopiuj wartosc silni do mianownika      
+                       MOV [mianow], AX          ;Zapisz wartosc mianownika
+
+                       XOR AX, AX
+                       XOR BX, BX
+
+
+
+
 
 
 
@@ -116,4 +154,49 @@ mianow DW  1
 suma    DQ  0.0
 krok     DW  0
 parz1    DB  2
-silnia    DW 1
+ilesilnia    DW  1
+temp1   DW  0
+newsilna DW 1
+adr_init  DW  0
+
+
+;-------------------------------Silnia--------------------------------
+
+silnia:
+         POP AX                  ;Zrzuc adres powrotu
+         MOV [adr_init], AX      ;Przenies adres do AX
+
+         MOV CX, 1
+         XOR BX, BX
+
+
+         sloop:
+                XOR AX, AX
+                CMP CX, [ilesilnia]
+                JE lpEnd
+                INC CX
+
+                MOV AX, [newsilna]
+                MOV BX, CX
+                MUL BX
+                MOV [newsilna], AX
+
+                XOR DX, DX
+                XOR BX, BX
+
+                MOV AH, 2
+                MOV DL, 'X'
+                INT 21H
+           
+         JMP sloop
+
+         lpEnd:
+
+         XOR   CX, CX
+         XOR   AX, AX
+         XOR   BX, BX
+         MOV  AX, [adr_init]      ;Do AX wartosc adresu powrotu
+         PUSH AX                 ;Wrzuc adres powrotu na stos
+RET
+
+;--------------------------------------------------------------------
