@@ -23,13 +23,9 @@ ORG 100H
                 XOR BX, BX
                 oblicz:
 
-                        XOR AX, AX                   ;Wyczysc gore rejestru AX
-                        CMP CX, 4                    ;Porownaj czy koniec petli                                 !!!!!!!!!!!!!!!!!!!!!! 0.4846 warunkiem konca
-                        JE koniec                       ;Jesli tak to zakoncz program
-
-                        MOV [krok], CX                ;Przenies do zmiennej krok aktualna ilosc licznika petli
+                        XOR AX, AX
                         MOV AX, CX                    ;Kopiuj do rejestru AX wartosc licznika petli
-                        INC CX                          ;Zwieksz licznik petli
+                       
 
                         MOV BL, 2                    ;Przenies do BL wartosc 2
                         DIV BL                         ;AL = (AX div BL), AH = (AX mod BL)
@@ -43,9 +39,9 @@ ORG 100H
                         XOR AX, AX
                         MOV AL, [jeden]
                         CMP AL, -1
-                        JE et1
+                        JE etyk1
                         NEG AL
-                    et1:
+                    etyk1:
                         MOV [jeden], AL
 
                         MOV AH, 9
@@ -79,15 +75,6 @@ ORG 100H
                         ADD AX, 1
                         MOV [ilesilna], AX                    ; tu zmienna silnia = 1 ,3 ,5, 7  ale po wywolaniu procedury bedzie to obliczona wartosc 1 2 6 24 120 720 itd
 
-                       ;XOR AX, AX
-                       ; MOV AH, 2
-                       ; XOR DX, DX
-                       ; MOV DX, [ilesilna]
-                       ; XOR DH, DH
-                       ; ADD DL, 48
-                       ;INT 21H
-
-                       ;Wartosc ilesilnia jest liczona poprawnie tak wiec zjebalem cos przy liczeniu silni dla tej liczby
 
                        ; liczymy silnie 
 
@@ -115,12 +102,14 @@ ORG 100H
 
                        MOV AX, [jeden]                ;Licznik czyli wlasciwie sama jedynka jest obliczana automatycznie wyzej
                        XOR AH, AH
-
                        MOV [part1], AX             ;obliczamy czy jedynka dodatnia czy ujemna, nie trzeba wczytywac wartosci 
 
                        ;Part2 to wynik potegowania zamienionych radianow 
 
 
+                                                           ;Zwieksz licznik petli
+                        MOV [krok], CX                ;Przenies do zmiennej krok aktualna ilosc licznika petli
+                        INC CX
 
                        MOV [temp1], CX              ;zapamietaj wartosc kroku
 
@@ -132,17 +121,6 @@ ORG 100H
 
 
            koploop:
-
-
-                       ; XOR AX, AX
-                       ; MOV AH, 2
-                       ; XOR DX, DX
-                       ; MOV DX, CX
-                       ; XOR DH, DH
-                       ; INT 21H
-
-                        WAIT
-
 
                         FMUL st0, st1          
                         FWAIT
@@ -157,27 +135,93 @@ ORG 100H
                         MOV  CX, [temp1]              ;Wczytaj wartosc kroku
 
                         FSTP qword [part2]            ; part2 = radx^(2n+1)
-                        FFREE st0
 
+                        FFREE st0
+                
+                      
+                        ;stos czysty
                         ;part1 * part2 = licznik
 
+                      
+                        FLD qword [part2]       ;st0 =  part2 , 
+                        FLD dword [part1]        ;st0 = part1 , st1 = part2      
+
+                        FMULP st1, st0
+
+                        FSTP qword [licznik]
+
+                        ;stos czysty
+
+                        FLD qword [licznik]     ;st0 = licznik
+                        FILD dword [mianow]     ;st0 = mianownik, st1 = licznik
+                        FDIVP st1, st0          ;st0 = licznik/mianownik
+
+                        FSTP qword [iloraz]   
+
+                       
+                        FLD qword [suma]     ;st0 = suma ,
+                        FLD qword [iloraz]     ;st0 = iloraz , st1 = suma
+
+                        FADDP st1, st0          ;st0 = suma
+                        FSTP qword [suma]     ;st0 czyste
 
 
+                        FLD qword [condit]      ;st0 = 0.4846
+                        FLD qword [suma]       ;st0 = suma , st1 = 0.4846
 
-                JMP oblicz
+                        FCOMPP
+
+                        FSTSW AX
+
+                        SAHF
+                        ;stos czysty
+
+
+                        JA czypier                      ; jesli suma wieksza od warunku to koniec zadania
+
+                        JMP oblicz
+
+            czypier: 
+
+                        XOR BX, BX
+                        MOV BX, [krok]
+                        CMP BX, 1
+                        JE oblicz
+
+                        JMP koniec
 
     koniec:
+
+                   
+
+
                 MOV AH, 9
                 MOV DX, ent1
                 INT 21H
 
+                MOV DX, info0
+                INT 21H
+
+                MOV AH, 2
+                MOV DX, [krok]   ; 0, 1, 2 ale wyswietlam jako 3 OBROTY PETLI 
+                XOR DH, DH
+                ADD DL, 49
+                INT 21H
+
+                 MOV AH, 9
                 MOV DX, info1
+                INT 21H
+
+
+
+                MOV DX, ent1
                 INT 21H
 
                 MOV AX, 4C00H
                 INT 21H
 
 info  DB "Witaj w programie wykonujacym dzialania na koprocesorze!$"
+info0 DB "Ilosc obrotow petli potrzebnych do obliczenia to: $"
 info1 DB "Koniec programu.$"
 ent1  DB  10,13,36
 
@@ -189,28 +233,18 @@ arg2   DQ   180.0
 radx   DQ    0.0
 check DQ    0.507
 
-sinx    DQ    0.0
-
 condit          DQ    0.4846
 jeden          DB   1
 mianow       DW  1
-
 krok           DW  0
 ilesilna        DW  1
 temp1         DW  1
 newsilna       DW 1
-adr_init        DW  0
-
-
 init        DQ 1.0
-
 part1          DW 1
 part2          DQ 1.0
-
 licznik  DQ  1.0
-
 iloraz          DQ 1.0
-
 suma          DQ  0.0
 ;-------------------------------Silnia--------------------------------
 
